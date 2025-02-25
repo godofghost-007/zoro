@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Picture Puzzle</title>
+    <style>
+        body {
+          font-family: 'Verdana', sans-serif; /* Changed font family */
+            background-image:url(https://i.pinimg.com/736x/b4/04/db/b404db0a532b8aee532d078c330901c2.jpg); /*url('https://i.pinimg.com/736x/ab/3c/81/ab3c816acf7c79843e7a44313297b5c4.jpg');*/
+
+            background-size: 825px; /* Changed to cover for better background fitting */
+            background-position: center;
+            margin: 0; /* Changed to 0 for a cleaner look */
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        h1 {
+              color:  #8B0000; /* Change to your desired color */
+            }
+        .puzzle-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            width: 406px;
+            height: 406px;
+            margin: 20px;
+            border: 2px solid #333;
+        } 
+
+        .puzzle-piece {
+            width: 134px;
+            height: 134px;
+            background-image:url('https://picsum.photos/400');
+/* url('https://media-hosting.imagekit.io//b1c39465e9bb4c27/IMG-20241124-WA0007.jpg?Expires=1835021529&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=PCxFHaej1YAmK88nb7NZaOYMHD15YRKmgVMsxSGShKzuY~2soDQAVFd0kN55fDoNaJdKQngyUHpKozdheo8lYUGy~X5c9Il~xvcHtn3CDsl~1Ejg2JA1WJkyA6cbJwNCIfAR6MoXd4eGVUXXlhIxd2ZUF5lem0oW2kxrUns33pAwrXm~ZDezPqXV83I36o84SGhAILBw~s6fIVYY~LrsTHLd0ERukpyZqrmIprMFjzphtFEvlf3M0JEvBRMt1qguGJo89rMPH4gg3kitHzgfHkRgnVmQxiAfHYVnqpP7fk21bVdQeTxfeH-0veS20pNaZFjl6~tnqWrJW-k8kU1xIg__');*/
+            background-size: 400px 400px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .puzzle-piece:hover {
+            transform: scale(1.05);
+            z-index: 1;
+        }
+        #controls {
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        .empty {
+            background: #ddd;
+            border: 2px dashed #999;
+        }
+    </style>
+</head>
+<body>
+    <h1>Picture Puzzle</h1>
+    <div class="puzzle-container" id="puzzleContainer"></div>
+    <div id="controls">
+        <button onclick="shufflePieces()">Shuffle Puzzle</button>
+    </div>
+
+    <script>
+        const puzzleContainer = document.getElementById('puzzleContainer');
+        const pieceCount = 9;
+        let pieces = [];
+        let emptyIndex = 8;
+
+        // Create puzzle pieces
+        function createPuzzle() {
+            for(let i = 0; i < pieceCount; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'puzzle-piece';
+                piece.dataset.index = i;
+                
+                // Calculate background position
+                const col = (i % 3) * 134;
+                const row = Math.floor(i / 3) * 134;
+                piece.style.backgroundPosition = `-${col}px -${row}px`;
+                
+                piece.addEventListener('click', movePiece);
+                pieces.push(piece);
+            }
+            pieces[emptyIndex].classList.add('empty');
+            pieces[emptyIndex].style.backgroundImage = 'none';
+            updatePuzzle();
+        }
+
+        // Move puzzle piece
+        function movePiece(e) {
+            const clickedIndex = pieces.indexOf(e.target);
+            const row = Math.floor(clickedIndex / 3);
+            const col = clickedIndex % 3;
+            const emptyRow = Math.floor(emptyIndex / 3);
+            const emptyCol = emptyIndex % 3;
+
+            if((Math.abs(row - emptyRow) === 1 && col === emptyCol) ||
+               (Math.abs(col - emptyCol) === 1 && row === emptyRow)) {
+                
+                // Swap pieces
+                [pieces[clickedIndex], pieces[emptyIndex]] = 
+                [pieces[emptyIndex], pieces[clickedIndex]];
+                
+                emptyIndex = clickedIndex;
+                updatePuzzle();
+                checkWin();
+            }
+        }
+
+        // Update puzzle display
+        function updatePuzzle() {
+            puzzleContainer.innerHTML = '';
+            pieces.forEach(piece => {
+                if(piece.classList.contains('empty')) {
+                    piece.style.backgroundImage = 'none';
+                }
+                puzzleContainer.appendChild(piece);
+            });
+        }
+
+        // Shuffle pieces
+        function shufflePieces() {
+            for(let i = 0; i < 1000; i++) {
+                const adjacent = getAdjacentIndices(emptyIndex);
+                const randomIndex = adjacent[Math.floor(Math.random() * adjacent.length)];
+                [pieces[emptyIndex], pieces[randomIndex]] = 
+                [pieces[randomIndex], pieces[emptyIndex]];
+                emptyIndex = randomIndex;
+            }
+            updatePuzzle();
+        }
+
+        // Get valid move indices
+        function getAdjacentIndices(index) {
+            const adjacent = [];
+            if(index % 3 > 0) adjacent.push(index - 1); // left
+            if(index % 3 < 2) adjacent.push(index + 1); // right
+            if(index >= 3) adjacent.push(index - 3); // top
+            if(index < 6) adjacent.push(index + 3); // bottom
+            return adjacent;
+        }
+
+        // Check if puzzle is solved
+        function checkWin() {
+            const isSolved = pieces.every((piece, index) => 
+                piece.dataset.index == index || piece.classList.contains('empty'));
+            if(isSolved) {
+                alert('Congratulations! You solved the puzzle!');
+            }
+        }
+
+        // Initialize puzzle
+        createPuzzle();
+        shufflePieces();
+    </script>
+</body>
+</html>
